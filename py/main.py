@@ -4,20 +4,17 @@ import time
 import threading
 from pythonosc import udp_client
 
-# Import modules
 from hand_detection import (
     HandDetector, get_touching_fingers, get_finger_colors, 
     get_hand_position, get_hand_angle, draw_hand_landmarks
 )
 from note_collection import NoteRecorder
-from graph_visualization import plot_agent_notes
 from generative_agent import GenerativeAgent
 
 # ============================================================================
 # GLOBAL CONFIGURATION - Control here
 # ============================================================================
 ENABLE_NOTE_COLLECTION = True  # Toggle note recording on/off
-ENABLE_GRAPH_VISUALIZATION = True  # Toggle graph display on/off
 ENABLE_OSC = True  # Toggle OSC messages on/off
 ENABLE_GENERATIVE_AGENT = True  # Toggle generative agent on/off
 
@@ -134,40 +131,34 @@ while True:
                 # Smooth velocity: only allow change of ±0.05 per frame
                 velocity = np.clip(velocity, previous_velocity - 0.05, previous_velocity + 0.05)
         
-        # Update previous position and time
         previous_hand_pos = hand_pos
         previous_time = current_time
         previous_velocity = velocity
         
-        # ====================================================================
-        # NOTE COLLECTION
-        # ====================================================================
+        
         if ENABLE_NOTE_COLLECTION:
-            # Check if fingers changed (new note or pause)
+            
             current_time_session = current_time - session_start_time
             fingers_changed = (sorted(active_fingers) != sorted(previous_active_fingers))
             
-            if active_fingers:  # Fingers are pinched
+            if active_fingers:  
                 if fingers_changed:
-                    # Start a new note
+                    
                     note_recorder.start_note(active_fingers, hand_pos[0], hand_pos[1], hand_pos[2], 
                                             hand_angle, velocity, current_time_session)
                 else:
-                    # Continue recording current note - record every frame, but sample every 10
                     note_recorder.record_point(hand_pos[0], hand_pos[1], hand_pos[2], 
                                              hand_angle, velocity, current_time_session)
-            else:  # No fingers pinched
-                # Call pause every frame (not just on transition) to detect sustained pauses
+            else:  
                 note_recorder.pause(current_time_session)
             
             previous_active_fingers = active_fingers.copy()
             
-            # Check if a phrase just ended and trigger generative agent in background thread
             if ENABLE_GENERATIVE_AGENT and note_recorder.last_phrase_ended is not None and not agent_is_playing:
                 phrase_num = note_recorder.last_phrase_ended
                 print(f"\n[MAIN] Phrase {phrase_num} ended - triggering generative agent in background!")
                 
-                # Run agent in separate thread so camera doesn't freeze
+               
                 def run_agent_in_background():
                     global agent_is_playing
                     agent_is_playing = True
@@ -179,20 +170,18 @@ while True:
                         import traceback
                         traceback.print_exc()
                     finally:
-                        agent_is_playing = False  # Clear flag when done
+                        agent_is_playing = False  
                 
                 agent_thread = threading.Thread(target=run_agent_in_background, daemon=True)
                 agent_thread.start()
                 
-                # Reset the flag so we don't trigger repeatedly
+                
                 note_recorder.last_phrase_ended = None
         
-        # ====================================================================
+        #########################
         # OSC MESSAGES
-        # ====================================================================
         if ENABLE_OSC:
-            # Send OSC messages (single hand, no hand index)
-            # Convert fingers to string to avoid pythonosc type issues
+            
             fingers_str = ",".join(map(str, active_fingers)) if active_fingers else ""
             osc_client.send_message("/fingers", fingers_str)
             osc_client.send_message("/x", hand_pos[0])
@@ -201,41 +190,36 @@ while True:
             osc_client.send_message("/velocity", velocity)
             osc_client.send_message("/angle", hand_angle)
         
-        # Print every second
+        
         if should_print:
             notes_count = len(note_recorder.notes) if ENABLE_NOTE_COLLECTION else 0
-            #print(f"[STATUS] Collected {notes_count} notes | Active fingers: {active_fingers if active_fingers else 'NONE'}")
             if ENABLE_NOTE_COLLECTION and note_recorder.pause_start_time is not None:
                 elapsed = current_time_session - note_recorder.pause_start_time
                 remaining = note_recorder.PAUSE_PHRASE_THRESHOLD - elapsed
-                #print(f"[STATUS]   PAUSE: {elapsed:.2f}s elapsed, {remaining:.2f}s until phrase end")
-        
-        # Get colors based on thumb contact (z-adjusted)
+                
+
         colors = get_finger_colors(hand_landmarks, hand_pos[2])
         
-        # Draw hand landmarks
+        
         draw_hand_landmarks(img, hand_landmarks, colors)
     
     else:
-        # Clear tracking when no hands detected
+        
         if finger_tracking:
             finger_tracking.clear()
-    
-    # Update print time
+
     if should_print:
         last_print_time = current_time
     
-    # Mirror the image horizontally
+    
     img_mirrored = cv2.flip(img, 1)
     
-    # Display the mirrored image
+    
     cv2.imshow("CamOutput", img_mirrored)
     
-    # Wait 1ms and check if 'q' is pressed
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-# Clean up
 videoCap.release()
 cv2.destroyAllWindows()
 

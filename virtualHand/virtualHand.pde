@@ -16,11 +16,12 @@ PImage one;
 PImage two;
 PImage three;
 PImage four;
+PImage bg;
 
 boolean values = false;
 
 void setup() {
-  size(800, 600);
+  size(640, 480);
   
   frameRate(12);
   
@@ -31,6 +32,7 @@ void setup() {
   two = loadImage("2.png");
   three = loadImage("3.png");
   four = loadImage("4.png");
+  bg = loadImage("bg.jpg");
   
   println("Listening for OSC messages on port 5005");
 }
@@ -38,8 +40,9 @@ void setup() {
 void draw() {
   background(50);
   
-  // Display the received data
-  fill(255);
+  imageMode(CORNER);
+  image(bg,0,0);
+ 
   if (values == true){
     textSize(12);
     text("Fingers: " + join(fingers, ","), 50, 50);
@@ -54,7 +57,7 @@ void draw() {
   pushMatrix();
   translate((1-x) * width,y * height);
   rotate(map(angle,0,1,-PI/2,PI/2));
-  scale(map(z,0,1,0.3,1));
+  scale(map(z,0,1,0.3,1.3));
   if (fingers.length > 0){
     image(img, 0, 0);
     

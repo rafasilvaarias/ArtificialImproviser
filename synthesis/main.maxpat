@@ -272,7 +272,7 @@
 
 			}
  ],
-		"originid" : "pat-14",
+		"originid" : "pat-6",
 		"parameters" : 		{
 			"obj-2::obj-11" : [ "live.dial[4]", "live.dial", 0 ],
 			"obj-2::obj-27" : [ "live.dial", "live.dial", 0 ],
@@ -321,7 +321,7 @@
 ,
 		"dependency_cache" : [ 			{
 				"name" : "pulsar~.maxpat",
-				"bootpath" : "C:/MCMDS/Human-Computer Co-Creativity in Music Improvisation/Pulsar Max",
+				"bootpath" : "C:/MCMDS/Human-Computer Co-Creativity in Music Improvisation/ArtificialImproviser/synthesis",
 				"patcherrelativepath" : ".",
 				"type" : "JSON",
 				"implicit" : 1
